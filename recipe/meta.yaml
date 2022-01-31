@@ -18,6 +18,8 @@ build:
   skip: True  # [not win]
 
 requirements:
+  build:
+    - m2-patch  # [win]
   host:
     - posix
     - m2w64-toolchain
