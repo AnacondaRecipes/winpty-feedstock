@@ -20,7 +20,7 @@ build:
 requirements:
   build:
     - msys2-posix
-    #- m2w64-toolchain
+    - ucrt64-toolchain
 
 test:
   commands:
