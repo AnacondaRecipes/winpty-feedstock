@@ -11,18 +11,16 @@ source:
   url: https://github.com/rprichard/{{ name }}/archive/{{ version }}.tar.gz
   sha256: {{ hash }}
   patches:
-     - 0001-disable-msys-compiler-check.patch
+    - 0001-disable-msys-compiler-check.patch
 
 build:
-  number: 4
+  number: 5
   skip: True  # [not win]
 
 requirements:
   build:
-    - m2-patch  # [win]
-  host:
-    - posix
-    - m2w64-toolchain
+    - msys2-posix
+    - ucrt64-gcc-toolchain
 
 test:
   commands:
