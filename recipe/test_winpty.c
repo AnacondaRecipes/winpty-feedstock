@@ -1,5 +1,5 @@
-# Minimal consumer smoke test: link against the installed libwinpty and
-# exercise the public API. Installed into the test env by meta.yaml.
+// Minimal consumer smoke test: link against the installed libwinpty and
+// exercise the public API. Installed into the test env by meta.yaml.
 #include <stdio.h>
 #include <wchar.h>
 #include <winpty.h>
