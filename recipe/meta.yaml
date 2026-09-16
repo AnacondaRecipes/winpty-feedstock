@@ -7,24 +7,50 @@ package:
   version: {{ version }}
 
 source:
-  fn: {{ name }}-{{ version }}.tar.gz
-  url: https://github.com/rprichard/{{ name }}/archive/{{ version }}.tar.gz
-  sha256: {{ hash }}
-  patches:
-    - 0001-disable-msys-compiler-check.patch
+  - fn: {{ name }}-{{ version }}.tar.gz
+    url: https://github.com/rprichard/{{ name }}/archive/{{ version }}.tar.gz
+    sha256: {{ hash }}
+    patches:
+      - 0001-disable-msys-compiler-check.patch
+  # win-arm64 builds through winpty's upstream MSVC/GYP path (no MSYS/mingw);
+  # gyp-next is the build-only project generator for it.
+  - url: https://github.com/nodejs/gyp-next/archive/refs/tags/v0.22.2.tar.gz  # [win and arm64]
+    sha256: eec4d9ca36028a28bffa6313fb7db51d664f06f49387cb734369777a55730d4d  # [win and arm64]
+    folder: gyp-next  # [win and arm64]
 
 build:
-  number: 5
+  number: 6
   skip: True  # [not win]
 
 requirements:
   build:
-    - msys2-posix
-    - ucrt64-gcc-toolchain
+    # win-64: winpty's POSIX-shell configure + make build (mingw toolchain)
+    - msys2-posix          # [not (win and arm64)]
+    - ucrt64-gcc-toolchain # [not (win and arm64)]
+    # win-arm64: MSVC via winpty.gyp (no toolchain metapackage needed)
+    - {{ compiler('cxx') }}  # [win and arm64]
+    - {{ stdlib('c') }}      # [win and arm64]
+    - python >=3.9           # [win and arm64]
+    - packaging >=24         # [win and arm64]
+    - setuptools >=77.0.3    # [win and arm64]
 
 test:
+  requires:
+    - {{ compiler('cxx') }}  # [win and arm64]
+  files:
+    - test_winpty.c  # [win and arm64]
   commands:
     - winpty-agent --version
+    # win-arm64: link a C consumer against the installed lib/headers and run it,
+    # then assert the shipped binaries are real ARM64 PE images.
+    # NB: on win-arm64 Anaconda's %CXX% is clang++ (GNU driver), so call the
+    # MSVC driver explicitly for this MSVC-style command line.
+    - call cl.exe /nologo /MD /W4 /I"%LIBRARY_INC%" test_winpty.c /link /LIBPATH:"%LIBRARY_LIB%" winpty.lib /OUT:winpty-consumer.exe  # [win and arm64]
+    - dumpbin /imports winpty-consumer.exe | findstr /I /C:"winpty.dll"  # [win and arm64]
+    - winpty-consumer.exe  # [win and arm64]
+    - dumpbin /headers winpty-consumer.exe | findstr /I /C:"AA64 machine (ARM64)"  # [win and arm64]
+    - dumpbin /headers "%LIBRARY_BIN%\winpty.dll" | findstr /I /C:"AA64 machine (ARM64)"  # [win and arm64]
+    - dumpbin /headers "%LIBRARY_BIN%\winpty-agent.exe" | findstr /I /C:"AA64 machine (ARM64)"  # [win and arm64]
 
 about:
   home: https://github.com/rprichard/winpty
